@@ -6,6 +6,10 @@
   "scripts": {
     "test": "mocha --recursive"
   },
+  "repository" : {
+    "type" : "git",
+    "url" : "https://github.com/thekoushik/gateman.git"
+  },
   "keywords": [
     "validation",
     "json"
