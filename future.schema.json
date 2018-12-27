@@ -1,0 +1,30 @@
+{
+    "customer":"mixed|required",
+    "sku":"string|required",
+    "products":[
+        {
+            "$min":1,
+            "$max":10,
+            "quantity":"number|required|max:'qty'",
+            "rate":"number|required",
+            "product":{
+                "description":"string|required",
+                "part_no":"string"
+            },
+            "delivery_schedules":[
+                {
+                    "qty":"number|required|sum:'products.$.quantity'",
+                    "period":"date|inyears:'products.$.delivery_schedules.$.years'",
+                    "years":["year|count:2"]
+                }
+            ]
+        }
+    ],
+    "qty":"number",
+    "tags":["string"],
+    "phone":"_phone",
+    "email":"email",
+    "date":"date",
+    "price":"number|min:0",
+    "remarks":"string|maxlength:200"
+}

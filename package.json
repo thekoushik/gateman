@@ -1,0 +1,18 @@
+{
+  "name": "gateman",
+  "version": "0.0.1",
+  "description": "Simple and easiest JSON validator",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --recursive"
+  },
+  "keywords": [
+    "validation",
+    "json"
+  ],
+  "author": "Koushik Seal",
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "^5.2.0"
+  }
+}
