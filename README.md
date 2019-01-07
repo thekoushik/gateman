@@ -1,31 +1,35 @@
 # Gateman
 Simple and easiest JSON validator
 
+# Documentation
+see [docs.md](docs.md)
+
 # Installation
 ```
 npm install gateman
 ```
 
-# Usage
-```
-var Gateman=require('gateman');
-var validation=new Gateman({
-    name:"string|required|minlength:5",
+# Basic Usage
+```javascript
+var gateman=require('gateman');
+var validate=gateman({
+    name:"string|minlength:5|required",
     age:"number|required",
     dob:"date",
     address:{
         country:"string",
         city:"string|required",
-    }
+    },
+    tags:["string|maxcount:2"]
 });
-var err=validation.validate({
+var err=validate({
     name:"Koushik",
     age:28,
     dob:"1990-04-01",
     address:{
-        country:"India",
-        city:"Kolkata",
-    }
+        country:"India"
+    },
+    tags:["javascript","json"]
 });
 if(!err) console.log("Valid");
 else console.log(err);
@@ -33,14 +37,19 @@ else console.log(err);
 
 # Rules
 
-1. string
-2. number
-3. date
-4. email
-5. required
-6. min:<value>
-7. max:<value>
-8. minlength:<value>
-9. maxlength:<value>
+|Rule|Description|Param|
+|-|-|-|
+|string|String type check| |
+|number|Number type check| |
+|date|Date or not| |
+|email|Email or not| |
+|required|Value given or not| |
+|min|Minimum value check|number|
+|max|Maximum value check|number|
+|minlength|Minimum length check|number|
+|maxlength|Maximum length check|number|
+|count|Array length check|number|
+|mincount|Minimum array length check|number|
+|maxcount|Maximum array length check|number|
 
 # WIP

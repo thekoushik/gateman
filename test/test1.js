@@ -1,36 +1,36 @@
 var assert=require('assert');
-var Gateman=require('../index');
-var validation;
+var gateman=require('../index');
+var validate;
 
-describe("string test",()=>{
+function doTests(tests){
+    tests.forEach((test)=>{
+        it(JSON.stringify(test[0])+' => '+JSON.stringify(test[1]),()=>{
+            assert.deepEqual( validate(test[0]),test[1])
+        })
+    })
+}
+
+describe('name:"string"',()=>{
     before(()=>{
-        validation=new Gateman({
+        validate=gateman({
             name:"string"
         });
     })
-    it('"hello" should return null',()=>{
-        assert.equal( validation.validate({name:"hello"}),null)
-    })
-    it('"123" should return null',()=>{
-        assert.equal( validation.validate({name:"123"}),null)
-    })
-    it('123 should not return null',()=>{
-        assert.notEqual(validation.validate({name:123}),null)
-    })
-    it('undefined should return null',()=>{
-        assert.equal(validation.validate({}),null)
-    })
+    doTests([
+        [{name:"hello"},null],
+        [{name:"123"},null],
+        [{name:123},{ name: { string: 'name must be a string' } }],
+        [{},null]
+    ])
 })
-describe("required test",()=>{
+describe('name:"string|required"',()=>{
     before(()=>{
-        validation=new Gateman({
+        validate=gateman({
             name:"string|required"
         });
     })
-    it('undefined should not return null',()=>{
-        assert.notEqual(validation.validate({}),null)
-    })
-    it('"hello" should return null',()=>{
-        assert.equal( validation.validate({name:"hello"}),null)
-    })
+    doTests([
+        [{},{ name: { required: 'name is required' } }],
+        [{name:"hello"},null]
+    ])
 })

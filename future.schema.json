@@ -3,8 +3,8 @@
     "sku":"string|required",
     "products":[
         {
-            "$min":1,
-            "$max":10,
+            "$mincount":1,
+            "$maxcount":10,
             "quantity":"number|required|max:'qty'",
             "rate":"number|required",
             "product":{
