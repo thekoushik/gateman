@@ -50,17 +50,17 @@ else console.log(err);
 |required|Value given or not| |``` { address: "required" } ```|
 |min|Minimum value check|number|``` { price: "min:100" } ```|
 |max|Maximum value check|number|``` { price: "max:1000" } ```|
-|minlength|Minimum length check|number|``` { password: "required|minlength:5" } ```|
+|minlength|Minimum length check|number|``` { password: "minlength:5" } ```|
 |maxlength|Maximum length check|number|``` { description: "maxlength:200" } ```|
-|count|Array length check|number|``` { tags: ["string|count:2"]} ```|
-|mincount|Minimum array length check|number|``` { tags: ["string|mincount:2"] } ```|
-|maxcount|Maximum array length check|number|``` { tags: ["string|maxcount:2"] } ```|
+|count|Array length check|number|``` { tags: ["count:2"]} ```|
+|mincount|Minimum array length check|number|``` { tags: ["mincount:2"] } ```|
+|maxcount|Maximum array length check|number|``` { tags: ["maxcount:2"] } ```|
 |digit|Number of digit check|number|``` { pincode: ["digit:6"] } ```|
 |mindigit|Minimum number of digit check|number|``` { amount: ["mindigit:3"] } ```|
 |maxdigit|Maximum number of digit check|number|``` { amount: ["maxdigit:6"] } ```|
 |uppercase|All characters are uppercase or not| |``` { name: "uppercase" } ```|
 |lowercase|All characters are lowercase or not| |``` { name: "lowercase" } ```|
-|same|Value to be same as other field|string|``` { password: "required|minlength:5", confirm_password: "same:password" } ```|
+|same|Value to be same as other field|string|``` { password: "minlength:5", confirm_password: "same:password" } ```|
 |accepted|Value to be truthy(eg. ```true``` or ```1``` )| |``` { terms: "accepted" } ```|
 
 # WIP
