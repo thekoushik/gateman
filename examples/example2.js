@@ -1,12 +1,13 @@
 var gateman=require('../index');
+var GatemanError=require('../index').GatemanError;
 var validate=gateman({
-    name:"required",
+    name:"required|uppercase",
     products:[{
         "$required":true,
         name:"required",
-        code:"number|min:99999",
+        code:"number|digit:4",
         sub:[{
-            code:"number|required|min:99999"
+            code:"number|required|odd"
         }]
     }]
 },{
@@ -16,13 +17,14 @@ var validate=gateman({
     products:{
         required:"provide a product",
         name:"Product Name is needed",
-        code:{
-            min:"min failed"
-        }
+    }
+},{
+    odd:(value)=>{
+        return value%2==0?"%name% must be odd":null;
     }
 });
 var err=validate({
-    //name:"awdawdaw",
+    name:"awdawdaw",
     products:[
         {
             code:12345678,
@@ -36,7 +38,7 @@ var err=validate({
             code:12345,
             sub:[
                 {
-                    code:11177777
+                    code:2
                 }
             ]
         }

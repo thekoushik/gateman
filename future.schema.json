@@ -13,8 +13,8 @@
             },
             "delivery_schedules":[
                 {
-                    "qty":"number|required|sum:'products.$.quantity'",
-                    "period":"date|inyears:'products.$.delivery_schedules.$.years'",
+                    "qty":"number|required|sum:'products.quantity'",
+                    "period":"date|inyears:'products.delivery_schedules.years'",
                     "years":["year|count:2"]
                 }
             ]

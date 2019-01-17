@@ -125,9 +125,9 @@ function Gateman(schema,messages,custom){
                         [rule,...params]=rule.split(":",2);
                     var msg;
                     if(custom && custom[rule] && typeof custom[rule]=="function")
-                        msg=custom[rule](payload && payload[key],params);
+                        msg=custom[rule](payload && payload[key],params,payload);
                     else if(rules[rule])
-                        msg=rules[rule](payload && payload[key],params);
+                        msg=rules[rule](payload && payload[key],params,payload);
                     else
                         throw new Error("Rule "+rule+" is not defined");
                     if(!msg) continue;
@@ -143,3 +143,4 @@ function Gateman(schema,messages,custom){
     }
 }
 module.exports=Gateman;
+module.exports.GatemanError=GatemanError;

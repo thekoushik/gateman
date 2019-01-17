@@ -16,6 +16,8 @@ var validate=gateman({
     name:"string|minlength:5|required",
     age:"number|required",
     dob:"date",
+    password:"required|minlength:4",
+    confirm_password:"same:password",
     address:{
         country:"string",
         city:"string|required",
@@ -29,6 +31,8 @@ var err=validate({
     address:{
         country:"India"
     },
+    password:"abcd",
+    confirm_password:"abcd",
     tags:["javascript","json"]
 });
 if(!err) console.log("Valid");
@@ -37,19 +41,26 @@ else console.log(err);
 
 # Rules
 
-|Rule|Description|Param|
-|-|-|-|
-|string|String type check| |
-|number|Number type check| |
-|date|Date or not| |
-|email|Email or not| |
-|required|Value given or not| |
-|min|Minimum value check|number|
-|max|Maximum value check|number|
-|minlength|Minimum length check|number|
-|maxlength|Maximum length check|number|
-|count|Array length check|number|
-|mincount|Minimum array length check|number|
-|maxcount|Maximum array length check|number|
+|Rule|Description|Param Type|Example|
+|-|-|-|-|
+|string|String type check| |```{name:"string"}```|
+|number|Number type check| |```{age:"number"}```|
+|date|Date or not| |```{dob:"date"}```|
+|email|Email or not| |```{email:"email"}```|
+|required|Value given or not| |```{address:"required"}```|
+|min|Minimum value check|number|```{price:"min:100"}```|
+|max|Maximum value check|number|```{price:"max:1000"}```|
+|minlength|Minimum length check|number|```{password:"required|minlength:5"}```|
+|maxlength|Maximum length check|number|```{description:"maxlength:200"}```|
+|count|Array length check|number|```{tags:["string|count:2"]}```|
+|mincount|Minimum array length check|number|```{tags:["string|mincount:2"]}```|
+|maxcount|Maximum array length check|number|```{tags:["string|maxcount:2"]}```|
+|digit|Number of digit check|number|```{pincode:["digit:6"]}```|
+|mindigit|Minimum number of digit check|number|```{amount:["mindigit:3"]}```|
+|maxdigit|Maximum number of digit check|number|```{amount:["maxdigit:6"]}```|
+|uppercase|All characters are uppercase or not| |```{name:"uppercase"}```|
+|lowercase|All characters are lowercase or not| |```{name:"lowercase"}```|
+|same|Value to be same as other field|string|```{password:"required|minlength:5", confirm_password:"same:password"}```|
+|accepted|Value to be truthy(eg. ```true``` or ```1``` )| |```{terms:"accepted"}```|
 
 # WIP
