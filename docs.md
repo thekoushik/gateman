@@ -33,8 +33,8 @@ else
 will log the follwing
 ```json
 {
-	name: "Please provide your name",
-	age: { adult: "Only adults are allowed" }
+	"name": "Please provide your name",
+	"age": { "adult": "Only adults are allowed" }
 }
 ```
 
