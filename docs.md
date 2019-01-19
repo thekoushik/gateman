@@ -1,17 +1,42 @@
 # Gateman
-Simple and easiest JSON validator - WIP
+Simple and easiest JSON validator for nodejs
 
 # Syntax
-```gateman(schema,message,custom)```
+``` gateman(schema [, message [, custom] ]) ```
 Returns a [validator function](#validator-function)
 
 ### Parameters
-- schema
+- **schema** - Object
  JSON based schema ( see [schema](#schema) )
-- message (OPTIONAL)
+- **message** - Object (OPTIONAL)
  JSON based [messages](#messages)
-- custom (OPTIONAL)
+- **custom** - Object (OPTIONAL)
  [Custom validation](#custom-validation) rules
+
+### Example
+```javascript
+var gateman = require('gateman');
+var validate = gateman({
+		name: "required",
+		age: "required | adult"
+	},{
+		name: "Please provide your name"
+	},{
+		adult: (value)=>value<18?"Only adults are allowed":null
+	});
+var error = validate({name: "Koushik Seal", age: 9});
+if(!error)
+	console.log("Valid");
+else
+	console.log(JSON.stringify(error, null, 2));
+```
+will log the follwing
+```json
+{
+	name: "Please provide your name",
+	age: { adult: "Only adults are allowed" }
+}
+```
 
 # Schema
 JSON with rules seperated by ```|```
@@ -40,8 +65,30 @@ The above JSON will show the error message on any of ```string``` or ```required
 
 # Validator Function
 
-- ```function(json)```
+### Syntax
+``` function(json [, options]) ```
 Returns ```null``` if no error, otherwise returns [validation error](#validation-error)
+### Parameters
+1. **json** - Object
+	JSON payload to be validated
+2. **options** - Object (OPTIONAL)
+	[Validation options](#validation-options)
+
+# Validation Options
+- **flatten** - Boolean
+	Flat error object. ``` false ``` by default.
+	Example:
+	```javascript
+	var validate = gateman( { name: "uppercase" } );
+	var error = validate( { name: "hello" }, { flatten: true } );
+	console.log( JSON.stringify( error, null, 2) );
+	```
+	will log the following:
+	```json
+	{
+		"name.uppercase": "name must have all uppercase characters",
+	}
+	```
 
 # Validation Error
 This is basically a JSON similar to the input JSON with error messages
@@ -56,7 +103,18 @@ This is basically a JSON similar to the input JSON with error messages
 # Custom Validation
 JSON object where each keys are functions. These functions should return ```null``` if no error, and should return error message on error.
 > ***Note***: Existing rules can be overridden by custom validation
+
 ### Syntax
+```javascript
+{
+    custom_rule_name : function(value, parameters){
+        if(value==undefined) return "Your custom error message";
+        return null; //everything is fine
+    }
+}
+```
+
+### Example
 ```javascript
 {
     odd:function(value){

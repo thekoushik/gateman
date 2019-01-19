@@ -6,33 +6,15 @@ var GatemanError=require('./lib/gatemanerror');
 Have something unexpected? Stay out!
 */
 function Gateman(schema,messages,custom){
-    function register_error(key,error,errors,rule,message){
-        var rulemessage;
-        if(message){
-            if(typeof message=="object")
-                rulemessage=message[rule];
-            else if(typeof message=="string")
-                return errors[key]=message;
-            else
-                throw new Error("Syntax error: Message must be a string/object(see documentation)");
-        }
-        if(!errors[key]) errors[key]={};
-        if(error instanceof GatemanError){
-            if(error.index!=undefined){
-                if(!errors[key][error.index]) errors[key][error.index]={};
-                errors[key][error.index][rule]=rulemessage || error.message.replace(/%\w+%/g,target=>target=="%name%"?key:target);
-            }else
-                errors[key][rule]=rulemessage || error.message.replace(/%\w+%/g,target=>target=="%name%"?key:target);
-        }else
-            errors[key][rule]=rulemessage || error.replace(/%\w+%/g,target=>target=="%name%"?key:target);
-    }
     function _validate(payload,schema,messages){
         var errors={};
         var breakOnFirstError=(typeof messages=="string");
         for(var key in schema){
             if(key[0]=="$"){
-                if(key[1]!="$") continue;/////////////////////need review here in future
-                key=key.substr(1);
+                var temp=key.substr(1);;
+                if(custom[temp]){ key=temp; continue;}
+                else if(array_rules[temp]){ key=temp; continue;}
+                else if(rules[temp]){ key=temp; continue;}///////////future revision required to allow rules to be as key in object
             }
             var message=messages?((typeof messages=="object")?messages[key]:messages):undefined;
             if(Array.isArray(schema[key])){
@@ -43,20 +25,18 @@ function Gateman(schema,messages,custom){
                     else errors[key]="Field "+key+" must be an array";
                     continue;
                 }
-                if(schema[key].length>1) console.log("Multiple schema is not supported yet.");
+                if(schema[key].length>1) console.warn("Multiple schema is not supported yet.");
                 var rule=schema[key][0];
                 if(typeof rule=="string"){
                     for(var rule_array=rule.split('|'),i=0;i<rule_array.length;i++){
-                        var r=rule_array[i],params=[];
-                        if(r.includes(":"))
-                            [r,...params]=r.split(":",2);
+                        var {rule,params}=parseRule(rule_array[i]);
                         var msg;
-                        if(custom && custom[r] && typeof custom[r]=="function")
-                            msg=custom[r](payload && payload[key],params);
-                        else if(array_rules[r])
-                            msg=array_rules[r](payload && payload[key],params);
+                        if(custom && custom[rule] && typeof custom[rule]=="function")
+                            msg=custom[rule](payload && payload[key],params);
+                        else if(array_rules[rule])
+                            msg=array_rules[rule](payload && payload[key],params);
                         else
-                            throw new Error("Rule "+r+" is not defined");
+                            throw new Error("Rule "+rule+" is not defined");
                         if(!msg) continue;
                         if(breakOnFirstError) return messages;
                         if(breakOnFirstErrorArray){
@@ -65,9 +45,9 @@ function Gateman(schema,messages,custom){
                         }
                         if(Array.isArray(msg))
                             for(var j=0;j<msg.length;j++)
-                                register_error(key,msg[j],errors,r,message);
+                                register_error(key,msg[j],errors,rule,message);
                         else
-                            register_error(key,msg,errors,r,message);
+                            register_error(key,msg,errors,rule,message);
                     }
                 }else{//complex
                     var key_rules=Object.keys(rule).filter(i=>i[0]=="$" && i[1]!="$");
@@ -120,9 +100,7 @@ function Gateman(schema,messages,custom){
                 }
             }else{
                 for(var rule_array=schema[key].split('|'),i=0;i<rule_array.length;i++){
-                    var rule=rule_array[i],params=[];
-                    if(rule.includes(":"))
-                        [rule,...params]=rule.split(":",2);
+                    var {rule,params}=parseRule(rule_array[i]);
                     var msg;
                     if(custom && custom[rule] && typeof custom[rule]=="function")
                         msg=custom[rule](payload && payload[key],params,payload);
@@ -134,13 +112,67 @@ function Gateman(schema,messages,custom){
                     if(breakOnFirstError) return messages;
                     register_error(key,msg,errors,rule,message);
                 }
+                if(opt.ignoreSingle && errors[key] && typeof errors[key]!="string"){
+                    if(Object.keys(errors[key]).length==1){
+                        var k=Object.keys(errors[key])[0];
+                        errors[key]=errors[key][k];
+                    }
+                }
             }
         }
         return Object.keys(errors)==0?null:errors;
     }
-    return function(payload){
-        return _validate(payload,schema,messages);
+    var opt={};
+    return function(payload,options){
+        opt={
+            flatten:false,
+            ignoreSingle:false,
+            ...options
+        };
+        var errors=_validate(payload,schema,messages);
+        return (opt.flatten && errors)?flattenObj(errors):errors;
     }
+}
+function register_error(key,error,errors,rule,message){
+    var rulemessage;
+    if(message){
+        if(typeof message=="object")
+            rulemessage=message[rule];
+        else if(typeof message=="string")
+            return errors[key]=message;
+        else
+            throw new Error("Syntax error: Message must be a string/object(see documentation)");
+    }
+    if(!errors[key]) errors[key]={};
+    if(error instanceof GatemanError){
+        if(error.index!=undefined){
+            if(!errors[key][error.index]) errors[key][error.index]={};
+            errors[key][error.index][rule]=rulemessage || error.message.replace(/%\w+%/g,target=>target=="%name%"?key:target);
+        }else
+            errors[key][rule]=rulemessage || error.message.replace(/%\w+%/g,target=>target=="%name%"?key:target);
+    }else
+        errors[key][rule]=rulemessage || error.replace(/%\w+%/g,target=>target=="%name%"?key:target);
+}
+function parseRule(str){
+    if(!str.includes(":"))
+        return {rule:str.trim(),params:[]};
+    var [rule,...params]=str.split(":",2);
+    return {rule:rule.trim(),params:params.map(m=>m.trim())};
+}
+function flattenObj(obj){
+    var f_obj={};
+    for(var key in obj){
+        var item=obj[key]
+        if(typeof item=="string")
+            f_obj[key]=item
+        else{
+            var result=flattenObj(item)
+            for(var k in result)
+                f_obj[key+"."+k]=result[k]
+        }
+            
+    }
+    return f_obj;
 }
 module.exports=Gateman;
 module.exports.GatemanError=GatemanError;

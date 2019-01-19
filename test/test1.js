@@ -42,6 +42,7 @@ describe('name:"string|minlength:2"',()=>{
     })
     doTests([
         [{},null],
+        [{name:""},{name:{minlength:'name must be of atleast 2 characters'}}],
         [{name:"a"},{name:{minlength:'name must be of atleast 2 characters'}}],
         [{name:"foobar"},null],
     ])

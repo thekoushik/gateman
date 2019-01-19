@@ -1,7 +1,7 @@
 var gateman=require('../index');
 var GatemanError=require('../index').GatemanError;
 var validate=gateman({
-    name:"required|uppercase",
+    name:"required | uppercase",
     products:[{
         "$required":true,
         name:"required",
@@ -43,6 +43,6 @@ var err=validate({
             ]
         }
     ]
-});
+},{flatten:true});
 if(!err) console.log("Valid");
 else console.log(JSON.stringify(err,null,2));
