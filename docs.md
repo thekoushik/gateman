@@ -101,13 +101,13 @@ This is basically a JSON similar to the input JSON with error messages
 ```
 
 # Custom Validation
-JSON object where each keys are functions. These functions should return ```null``` if no error, and should return error message on error.
+JSON object where each keys are functions. These functions should return ```null``` if no error, and should return error message on error. The first argument is the value from input payload and the second argument is the parameters passed to the rule through schema definition.
 > ***Note***: Existing rules can be overridden by custom validation
 
 ### Syntax
 ```javascript
 {
-    custom_rule_name : function(value, parameters){
+    custom_rule_name : function(value, parameters){//parameters is an array
         if(value==undefined) return "Your custom error message";
         return null; //everything is fine
     }

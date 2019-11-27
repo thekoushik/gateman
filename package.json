@@ -1,14 +1,14 @@
 {
   "name": "gateman",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Simple and easiest JSON validator",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --recursive"
+    "test": "jest"
   },
-  "repository" : {
-    "type" : "git",
-    "url" : "https://github.com/thekoushik/gateman.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thekoushik/gateman.git"
   },
   "keywords": [
     "validation",
@@ -17,6 +17,9 @@
   "author": "Koushik Seal",
   "license": "MIT",
   "devDependencies": {
-    "mocha": "^5.2.0"
+    "jest": "^24.8.0"
+  },
+  "jest":{
+    "testMatch": [ "**/test/**/*.[jt]s?(x)", "**/?(*.)+(spec|test).[jt]s?(x)" ]
   }
 }

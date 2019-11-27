@@ -1,17 +1,15 @@
-var assert=require('assert');
 var gateman=require('../index');
 var validate;
-
 function doTests(tests){
     tests.forEach((test)=>{
         it(JSON.stringify(test[0])+' => '+JSON.stringify(test[1]),()=>{
-            assert.deepEqual( validate(test[0]),test[1])
+            expect(validate(test[0])).toStrictEqual(test[1])
         })
     })
 }
 
 describe('names:["string|required"]',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             names:["string|required"]
         });
@@ -25,7 +23,7 @@ describe('names:["string|required"]',()=>{
     ])
 })
 describe('tags:["mincount:2"]',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             tags:["string|mincount:2"]
         });
@@ -39,7 +37,7 @@ describe('tags:["mincount:2"]',()=>{
     ])
 })
 describe('tags:["maxcount:2"]',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             tags:["string|maxcount:2"]
         });
@@ -53,7 +51,7 @@ describe('tags:["maxcount:2"]',()=>{
     ])
 })
 describe('tags:["count:2"]',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             tags:["string|count:2"]
         });

@@ -1,17 +1,17 @@
-var assert=require('assert');
 var gateman=require('../index');
 var validate;
 
 function doTests(tests){
     tests.forEach((test)=>{
         it(JSON.stringify(test[0])+' => '+JSON.stringify(test[1]),()=>{
-            assert.deepEqual( validate(test[0]),test[1])
+            expect(validate(test[0])).toStrictEqual(test[1])
         })
     })
 }
 
+
 describe('name:"string"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             name:"string"
         });
@@ -24,7 +24,7 @@ describe('name:"string"',()=>{
     ])
 })
 describe('name:"string|required"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             name:"string|required"
         });
@@ -35,7 +35,7 @@ describe('name:"string|required"',()=>{
     ])
 })
 describe('name:"string|minlength:2"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             name:"string|minlength:2"
         });
@@ -48,7 +48,7 @@ describe('name:"string|minlength:2"',()=>{
     ])
 })
 describe('name:"string|maxlength:2"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             name:"string|maxlength:2"
         });
@@ -60,7 +60,7 @@ describe('name:"string|maxlength:2"',()=>{
     ])
 })
 describe('email:"email"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             email:"email"
         });
@@ -75,7 +75,7 @@ describe('email:"email"',()=>{
     ])
 })
 describe('val:"min:2"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             val:"min:2"
         });
@@ -89,7 +89,7 @@ describe('val:"min:2"',()=>{
     ])
 })
 describe('val:"max:2"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             val:"max:2"
         });
@@ -103,7 +103,7 @@ describe('val:"max:2"',()=>{
     ])
 })
 describe('val:"digit:2"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             val:"digit:2"
         });
@@ -116,7 +116,7 @@ describe('val:"digit:2"',()=>{
     ])
 })
 describe('val:"mindigit:2"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             val:"mindigit:2"
         });
@@ -129,7 +129,7 @@ describe('val:"mindigit:2"',()=>{
     ])
 })
 describe('val:"maxdigit:2"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             val:"maxdigit:2"
         });
@@ -142,7 +142,7 @@ describe('val:"maxdigit:2"',()=>{
     ])
 })
 describe('name:"uppercase"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             name:"uppercase"
         });
@@ -154,7 +154,7 @@ describe('name:"uppercase"',()=>{
     ])
 })
 describe('name:"lowercase"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             name:"lowercase"
         });
@@ -166,7 +166,7 @@ describe('name:"lowercase"',()=>{
     ])
 })
 describe('password:"required",confirm_password:"same:password"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             password:"required",confirm_password:"same:password"
         });
@@ -178,7 +178,7 @@ describe('password:"required",confirm_password:"same:password"',()=>{
     ])
 })
 describe('terms:"accepted"',()=>{
-    before(()=>{
+    beforeAll(()=>{
         validate=gateman({
             terms:"accepted"
         });
