@@ -101,16 +101,30 @@ This is basically a JSON similar to the input JSON with error messages
 ```
 
 # Custom Validation
-JSON object where each keys are functions. These functions should return ```null``` if no error, and should return error message on error. The first argument is the value from input payload and the second argument is the parameters passed to the rule through schema definition.
-> ***Note***: Existing rules can be overridden by custom validation
+JSON object where the value of each keys are **function** or **regular expression**.
 
-### Syntax
+> ***Note***: Existing rules(including global rules) can be overridden by custom validation
+
+### A. Function
+If function is used, the function should return ```null``` if no error, and should return error message on error. The first argument is the value from input payload and the second argument is the parameters passed to the rule through schema definition.
+
+#### Syntax
 ```javascript
 {
     custom_rule_name : function(value, parameters){//parameters is an array
         if(value==undefined) return "Your custom error message";
         return null; //everything is fine
     }
+}
+```
+
+### B. Regular expression
+If regular expression is used, it matches with the corresponding value.
+
+#### Syntax
+```javascript
+{
+    custom_rule_name : /^[A-Za-z0-9]$/
 }
 ```
 
@@ -121,4 +135,39 @@ JSON object where each keys are functions. These functions should return ```null
         return value/2==0?"Value must be odd":null;
     }
 }
+```
+
+# Set Global Rule
+Global rules can be set by `setGlobal()` which can override built-in rules. But custom validation can override global and built-in rules.
+
+### Syntax
+``` gateman.setGlobal(json) ```
+Add new rules or replace existing rules.
+> ***Note***: The argument will be merged with existing rules.
+
+### Parameters
+1. **json** - Object
+	This is similar to [Custom validation](#custom-validation)
+
+### Example
+```javascript
+var gateman = require('gateman');
+gateman.setGlobal({
+	email: (value)=> value=='demo@mail.com' // override email validation
+});
+var signup_validation = gateman({
+	name: "required",
+	email: "required|email" // global will be used
+});
+var signin_validation = gateman({
+	email: "required|email",
+	password: "required"
+});
+var forgot_password_validation = gateman({
+		email: "required|email"
+	}, null, { // use null for default messages
+		email: (value)=> value=='koushik@mail.com' // override global email validation
+	}
+);
+//use signup_validation, signin_validation, forgot_password_validation and so on
 ```

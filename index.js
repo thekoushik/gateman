@@ -2,6 +2,7 @@
 var rules=require('./lib/rules');
 var array_rules=require('./lib/array');
 var GatemanError=require('./lib/gatemanerror');
+var globals={};
 /*
 Have something unexpected? Stay out!
 */
@@ -11,7 +12,7 @@ function Gateman(schema,messages,custom){
         var breakOnFirstError=(typeof messages=="string");
         for(var key in schema){
             if(key[0]=="$"){
-                var temp=key.substr(1);;
+                var temp=key.substr(1);
                 if(custom[temp]){ key=temp; continue;}
                 else if(array_rules[temp]){ key=temp; continue;}
                 else if(rules[temp]){ key=temp; continue;}///////////future revision required to allow rules to be as key in object
@@ -57,9 +58,17 @@ function Gateman(schema,messages,custom){
                             var params=rule[key_rules[k]];
                             if(!Array.isArray(params)) params=[params];
                             var msg;
-                            if(custom && custom[r] && typeof custom[r]=="function")
-                                msg=custom[r](payload && payload[key],params);
-                            else if(array_rules[r])
+                            if(custom && custom[r]){
+                                if(typeof custom[r]=="function")
+                                    msg=custom[r](payload && payload[key],params);
+                                else if(custom[r] instanceof RegExp)
+                                    msg=runRegEx(custom[r],payload && payload[key]);
+                            }else if(globals[r]){
+                                if(typeof globals[r]=="function")
+                                    msg=globals[r](payload && payload[key],params);
+                                else if(globals[r] instanceof RegExp)
+                                    msg=runRegEx(globals[r],payload && payload[key]);
+                            }else if(array_rules[r])
                                 msg=array_rules[r](payload && payload[key],params);
                             else
                                 throw new Error("Rule "+r+" is not defined");
@@ -102,9 +111,19 @@ function Gateman(schema,messages,custom){
                 for(var rule_array=schema[key].split('|'),i=0;i<rule_array.length;i++){
                     var {rule,params}=parseRule(rule_array[i]);
                     var msg;
-                    if(custom && custom[rule] && typeof custom[rule]=="function")
-                        msg=custom[rule](payload && payload[key],params,payload);
-                    else if(rules[rule])
+                    if(custom && custom[rule]){
+                        if(typeof custom[rule]=="function")
+                            msg=custom[rule](payload && payload[key],params,payload);
+                        else if(custom[rule] instanceof RegExp){
+                            msg=runRegEx(custom[rule],payload && payload[key])
+                        }
+                    }else if(globals[rule]){
+                        if(typeof globals[rule]=="function")
+                            msg=globals[rule](payload && payload[key],params,payload);
+                        else if(globals[rule] instanceof RegExp){
+                            msg=runRegEx(globals[rule],payload && payload[key])
+                        }
+                    }else if(rules[rule])
                         msg=rules[rule](payload && payload[key],params,payload);
                     else
                         throw new Error("Rule "+rule+" is not defined");
@@ -170,9 +189,16 @@ function flattenObj(obj){
             for(var k in result)
                 f_obj[key+"."+k]=result[k]
         }
-            
     }
     return f_obj;
 }
+function runRegEx(regex,value){
+    if(value==undefined && value==null) return null;
+    if(typeof value!="string") return "Please enter valid %name%";
+    return value.match(regex)!=null?null:"Please enter valid %name%";
+}
 module.exports=Gateman;
+module.exports.setGlobal=function(obj){
+    globals={...globals,...obj};
+}
 module.exports.GatemanError=GatemanError;

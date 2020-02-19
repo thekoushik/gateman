@@ -1,10 +1,13 @@
 {
   "name": "gateman",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Simple and easiest JSON validator",
   "main": "index.js",
   "scripts": {
     "test": "jest"
+  },
+  "engines" : {
+    "node" : ">=6.4"
   },
   "repository": {
     "type": "git",
