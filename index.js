@@ -169,8 +169,10 @@ function register_error(key,error,errors,rule,message){
             errors[key][error.index][rule]=rulemessage || error.message.replace(/%\w+%/g,target=>target=="%name%"?key:target);
         }else
             errors[key][rule]=rulemessage || error.message.replace(/%\w+%/g,target=>target=="%name%"?key:target);
-    }else
+    }else if(typeof error=='string')
         errors[key][rule]=rulemessage || error.replace(/%\w+%/g,target=>target=="%name%"?key:target);
+	else//truthy value
+		errors[key][rule]=rulemessage || (key+' is invalid');
 }
 function parseRule(str){
     if(!str.includes(":"))

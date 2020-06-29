@@ -11,7 +11,7 @@ function doTests(tests){
 describe('setGlobal',()=>{
     beforeAll(()=>{
         gateman.setGlobal({
-            name: (value)=>(!value || (value.match(/^[a-zA-Z]{2,}$/)!=null)?null:'Please provide a valid name')
+            name: (value)=>(!value || (value.match(/^[a-zA-Z]{2,}$/)!=null)?false:'Please provide a valid name')
         });
         validate=gateman({
             name:"name",

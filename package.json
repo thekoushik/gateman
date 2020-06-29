@@ -1,6 +1,6 @@
 {
   "name": "gateman",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Simple and easiest JSON validator",
   "main": "index.js",
   "scripts": {
@@ -13,6 +13,12 @@
     "type": "git",
     "url": "https://github.com/thekoushik/gateman.git"
   },
+  "files":[
+	"index.js",
+	"lib/array.js",
+	"lib/gatemanerror.js",
+	"lib/rules.js"
+  ],
   "keywords": [
     "validation",
     "json"

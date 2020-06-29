@@ -106,7 +106,7 @@ JSON object where the value of each keys are **function** or **regular expressio
 > ***Note***: Existing rules(including global rules) can be overridden by custom validation
 
 ### A. Function
-If function is used, the function should return ```null``` if no error, and should return error message on error. The first argument is the value from input payload and the second argument is the parameters passed to the rule through schema definition.
+If function is used, the function should return falsy value if no error, and should return error message on error. The first argument is the value from input payload and the second argument is the parameters passed to the rule through schema definition. If a truthy value other than a string is returned, the error message will be "'key' is invalid" where key is the actual key name.
 
 #### Syntax
 ```javascript
@@ -132,7 +132,7 @@ If regular expression is used, it matches with the corresponding value.
 ```javascript
 {
     odd:function(value){
-        return value/2==0?"Value must be odd":null;
+        return value/2==0?"Value must be odd":false;
     }
 }
 ```
