@@ -3,9 +3,14 @@ var rules=require('./lib/rules');
 var array_rules=require('./lib/array');
 var GatemanError=require('./lib/gatemanerror');
 var globals={};
-/*
-Have something unexpected? Stay out!
-*/
+
+/**
+ * Validator creator function
+ * 
+ * @param schema    Schema definition object
+ * @param messages  Custom message definition object
+ * @param custom    Custom validation definition object
+ */
 function Gateman(schema,messages,custom){
     function _validate(payload,schema,messages){
         var errors={};
@@ -31,13 +36,7 @@ function Gateman(schema,messages,custom){
                 if(typeof rule=="string"){
                     for(var rule_array=rule.split('|'),i=0;i<rule_array.length;i++){
                         var {rule,params}=parseRule(rule_array[i]);
-                        var msg;
-                        if(custom && custom[rule] && typeof custom[rule]=="function")
-                            msg=custom[rule](payload && payload[key],params);
-                        else if(array_rules[rule])
-                            msg=array_rules[rule](payload && payload[key],params);
-                        else
-                            throw new Error("Rule "+rule+" is not defined");
+                        var msg=runArrayRule(custom,rule,key,params,payload);
                         if(!msg) continue;
                         if(breakOnFirstError) return messages;
                         if(breakOnFirstErrorArray){
@@ -46,9 +45,9 @@ function Gateman(schema,messages,custom){
                         }
                         if(Array.isArray(msg))
                             for(var j=0;j<msg.length;j++)
-                                register_error(key,msg[j],errors,rule,message);
+                                registerError(key,msg[j],errors,rule,message);
                         else
-                            register_error(key,msg,errors,rule,message);
+                            registerError(key,msg,errors,rule,message);
                     }
                 }else{//complex
                     var key_rules=Object.keys(rule).filter(i=>i[0]=="$" && i[1]!="$");
@@ -57,21 +56,7 @@ function Gateman(schema,messages,custom){
                             var r=key_rules[k].substr(1);
                             var params=rule[key_rules[k]];
                             if(!Array.isArray(params)) params=[params];
-                            var msg;
-                            if(custom && custom[r]){
-                                if(typeof custom[r]=="function")
-                                    msg=custom[r](payload && payload[key],params);
-                                else if(custom[r] instanceof RegExp)
-                                    msg=runRegEx(custom[r],payload && payload[key]);
-                            }else if(globals[r]){
-                                if(typeof globals[r]=="function")
-                                    msg=globals[r](payload && payload[key],params);
-                                else if(globals[r] instanceof RegExp)
-                                    msg=runRegEx(globals[r],payload && payload[key]);
-                            }else if(array_rules[r])
-                                msg=array_rules[r](payload && payload[key],params);
-                            else
-                                throw new Error("Rule "+r+" is not defined");
+                            var msg=runArrayRule(custom,r,key,params,payload);
                             if(!msg) continue;
                             if(breakOnFirstError) return messages;
                             if(breakOnFirstErrorArray){
@@ -80,9 +65,9 @@ function Gateman(schema,messages,custom){
                             }
                             if(Array.isArray(msg))
                                 for(var j=0;j<msg.length;j++)
-                                    register_error(key,msg[j],errors,r,message);
+                                    registerError(key,msg[j],errors,r,message);
                             else
-                                register_error(key,msg,errors,r,message);
+                                registerError(key,msg,errors,r,message);
                         }
                     }
                     var _payload=payload[key];
@@ -129,7 +114,7 @@ function Gateman(schema,messages,custom){
                         throw new Error("Rule "+rule+" is not defined");
                     if(!msg) continue;
                     if(breakOnFirstError) return messages;
-                    register_error(key,msg,errors,rule,message);
+                    registerError(key,msg,errors,rule,message);
                 }
                 if(opt.ignoreSingle && errors[key] && typeof errors[key]!="string"){
                     if(Object.keys(errors[key]).length==1){
@@ -152,7 +137,49 @@ function Gateman(schema,messages,custom){
         return (opt.flatten && errors)?flattenObj(errors):errors;
     }
 }
-function register_error(key,error,errors,rule,message){
+/**
+ * Run the provided validation for every item in array
+ * 
+ * @param array Array to check
+ * @param cb    Callback to execute with each item from array
+ */
+function runForEveryItem(array,cb){
+    if(!array) return null;
+    if(!Array.isArray(array)) return "%name% must be an array";
+    var errors=[];
+    for(var i=0;i<array.length;i++){
+        var error=cb(array[i]);
+        if(error) errors.push(new GatemanError(error,i));
+    }
+    return errors.length?errors:null;
+}
+/**
+ * Run array rules for built-in, custom and global rules
+ * 
+ * @param custom    Custom validations
+ * @param rule      rule name
+ * @param key       Key name
+ * @param params    Parameters for rule functions
+ * @param payload   Payload data
+ */
+function runArrayRule(custom,rule,key,params,payload){
+    if(custom && custom[rule]){
+        if(typeof custom[rule]=="function")
+            return runForEveryItem(payload && payload[key], (item)=>custom[rule](item,params)); //custom[rule](payload && payload[key],params);
+        else if(custom[rule] instanceof RegExp)
+            return runForEveryItem(payload && payload[key], (item)=>runRegEx(custom[rule],item)); //runRegEx(custom[rule],payload && payload[key]);
+    }else if(globals[rule]){
+        if(typeof globals[rule]=="function")
+            return runForEveryItem(payload && payload[key], (item)=>globals[rule](item,params)); //globals[rule](payload && payload[key],params);
+        else if(globals[rule] instanceof RegExp)
+            return runForEveryItem(payload && payload[key], (item)=>runRegEx(globals[rule],item)); //runRegEx(globals[rule],payload && payload[key]);
+    }else if(array_rules[rule])
+        return array_rules[rule](payload && payload[key],params);
+    else
+        throw new Error("Rule "+rule+" is not defined");
+    return null;
+}
+function registerError(key,error,errors,rule,message){
     var rulemessage;
     if(message){
         if(typeof message=="object")

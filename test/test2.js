@@ -64,3 +64,15 @@ describe('tags:["count:2"]',()=>{
         [{tags:["hello","world","foobar"]},{tags:{count:'tags must have exactly 2 item(s)'}}],
     ])
 })
+describe('custom validation in array 1',()=>{
+    beforeAll(()=>{
+        validate=gateman({
+            times:["string|time"]
+        },null,{
+            time: /^([0-9]){2}:([0-9]){2}:([0-9]){2}$/
+        });
+    })
+    doTests([
+        [{times:["10:10:10"]},null],
+    ])
+})
