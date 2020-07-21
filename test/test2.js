@@ -76,3 +76,22 @@ describe('custom validation in array 1',()=>{
         [{times:["10:10:10"]},null],
     ])
 })
+describe('tags:[{"$count":2,name: "string|required",type: "number"}]',()=>{
+    beforeAll(()=>{
+        validate=gateman({
+            tags:[{
+                '$count': 2,
+                name: "string|required",
+                type: 'number'
+            }]
+        });
+    })
+    doTests([
+        [{},{tags:{count:'tags must have exactly 2 item(s)'}}],
+        [{tags:[]},{tags:{count:'tags must have exactly 2 item(s)'}}],
+        [{tags:[{name:'awd'},{name: 'aa'}]},null]
+    ]);
+    it(JSON.stringify({tags:[{name:""}]})+' => '+JSON.stringify({'tags.0.name.required': 'name is required','tags.count':'tags must have exactly 2 item(s)'}),()=>{
+        expect(validate({tags:[{name:""}]},{flatten:true})).toStrictEqual({'tags.0.name.required': 'name is required','tags.count':'tags must have exactly 2 item(s)'})
+    })
+})

@@ -18,7 +18,8 @@ function Gateman(schema,messages,custom){
         for(var key in schema){
             if(key[0]=="$"){
                 var temp=key.substr(1);
-                if(custom[temp]){ key=temp; continue;}
+                if(custom && custom[temp]){ key=temp; continue;}
+                else if(globals[temp]) {key=temp; continue;}
                 else if(array_rules[temp]){ key=temp; continue;}
                 else if(rules[temp]){ key=temp; continue;}///////////future revision required to allow rules to be as key in object
             }
