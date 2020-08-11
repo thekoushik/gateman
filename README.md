@@ -48,7 +48,7 @@ else console.log(err);
 |date|Date or not| |``` { dob: "date" } ```|
 |email|Email or not| |``` { email: "email" } ```|
 |required|Value given or not| |``` { address: "required" } ```|
-|requiredif|Required if another field is given|string|``` { city: "string", address: "string|requiredif:city" } ```|
+|requiredif|Required if another field is given|string| ``` { city: "string", address: "string | requiredif: city" } ``` |
 |min|Minimum value check|number|``` { price: "min:100" } ```|
 |max|Maximum value check|number|``` { price: "max:1000" } ```|
 |minlength|Minimum length check|number|``` { password: "minlength:5" } ```|
@@ -80,7 +80,7 @@ Array rules operate on whole array and are prefixed with `$` symbol.
 	favourites:[
         {
             "$mincount": 2,
-			"$maxcount": 10,
+            "$maxcount": 10,
             rating:"number | required"
         }
     ]
