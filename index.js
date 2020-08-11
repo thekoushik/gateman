@@ -1,9 +1,252 @@
 'use strict';
-var rules=require('./lib/rules');
+var key_rules=require('./lib/rules');
 var array_rules=require('./lib/array');
 var GatemanError=require('./lib/gatemanerror');
 var globals={};
 
+/**
+ * Similar to compile() but with array rule support in keys
+ * @param {*} schema Schema object
+ * @param {*} custom Custom validations
+ */
+function compileArrayNested(schema,custom){
+    //$ rules supported in keys
+    let processed_schema={};
+    let compiled_rules_array=[];
+    for(let rule in schema){
+        let schema_body=schema[rule];
+        if(rule[0]=='$'){
+            let array_rule_name=rule.substr(1);
+            let params=[];
+            if(Array.isArray(schema_body)){
+                params=schema_body;
+            }else{
+                params=[schema_body];
+            }
+            if(custom[array_rule_name]){
+                if(typeof custom[rule] =='function'){
+                    compiled_rules_array.push({rule:array_rule_name, fn:(value,payload)=>custom[array_rule_name](value,params,payload) });
+                    continue;
+                }else{
+                    throw new Error("Custom array rule must be function");
+                }
+            }else if(globals[array_rule_name]){
+                if(typeof custom[rule] =='function'){
+                    compiled_rules_array.push({rule:array_rule_name, fn:(value,payload)=>globals[array_rule_name](value,params,payload) });
+                    continue;
+                }else{
+                    throw new Error("Global array rule must be function");
+                }
+            }else if(array_rules[array_rule_name]){
+                compiled_rules_array.push({rule:array_rule_name, fn:(value,payload)=>array_rules[array_rule_name](value,params,payload) });
+                continue;
+            }else{
+                processed_schema[rule]=schema_body;
+            }
+        }else{
+            processed_schema[rule]=schema_body;
+        }
+    }
+    return {
+        rules: compile(processed_schema,custom),
+        array_rules: compiled_rules_array
+    }
+}
+/**
+ * Simplifies rules to executable functions
+ * @param {*} rules Rules separated by |
+ * @param {*} custom Custom validation
+ * @param {*} arraySupport Whether to compile array rules or not
+ */
+function getRules(rules,custom,arraySupport){
+    let compiled_rules=[];
+    let compiled_rules_array=[];
+    let rule_names=rules.split('|');
+    for(let i=0;i<rule_names.length;i++){
+        let {rule,params}=parseRule(rule_names[i]);
+        if(arraySupport){
+            if(rule[0]=='$'){
+                let array_rule_name=rule.substr(1);
+                if(custom[array_rule_name]){
+                    if(typeof custom[rule] =='function'){
+                        compiled_rules_array.push({rule:array_rule_name, fn:(value,payload)=>custom[array_rule_name](value,params,payload) });
+                        continue;
+                    }else{
+                        throw new Error("Custom array rule must be function");
+                    }
+                }else if(globals[array_rule_name]){
+                    if(typeof custom[rule] =='function'){
+                        compiled_rules_array.push({rule:array_rule_name, fn:(value,payload)=>globals[array_rule_name](value,params,payload) });
+                        continue;
+                    }else{
+                        throw new Error("Global array rule must be function");
+                    }
+                }else if(array_rules[array_rule_name]){
+                    compiled_rules_array.push({rule:array_rule_name, fn:(value,payload)=>array_rules[array_rule_name](value,params,payload) });
+                    continue;
+                }//if not defined without $ then act as normal rule with $
+            }
+        }
+        if(custom[rule]){
+            if(custom[rule] instanceof RegExp){
+                compiled_rules.push({rule,fn: (value)=>runRegEx(custom[rule],value)});
+            }else{
+                compiled_rules.push({rule,fn: (value,payload)=>custom[rule](value,params,payload)})
+            }
+        }else if(globals[rule]){
+            if(globals[rule] instanceof RegExp){
+                compiled_rules.push({rule,fn: (value)=>runRegEx(globals[rule],value)});
+            }else{
+                compiled_rules.push({rule,fn: (value,payload)=>globals[rule](value,params,payload)})
+            }
+        }else if(key_rules[rule]){
+            compiled_rules.push({rule,fn: (value,payload)=>key_rules[rule](value,params,payload)});
+        }else{
+            throw new Error("Rule "+rule+" not defined");
+        }
+    }
+    if(arraySupport) 
+        return { rules: compiled_rules, array_rules: compiled_rules_array }
+    else
+        return {rules: compiled_rules}
+}
+/**
+ * Simplifies nested objects
+ * @param {*} schema Schema definition
+ * @param {*} custom Custom validation
+ */
+function compile(schema,custom){
+    let direct= [];
+    let nested=[];
+    let array_of_rules=[];
+    for(let key in schema){
+        let value=schema[key];
+        if(typeof value=='string'){
+            direct.push({ name: key, ...getRules(value, custom) });
+        }else if(Array.isArray(value)){
+            let array_schema=value[0];//multiple array elements not supported
+            if(array_schema){
+                if(typeof array_schema=='string'){
+                    array_of_rules.push({name: key, ...getRules(array_schema,custom,true) });
+                }else if(typeof value=='object' && value){
+                    array_of_rules.push({name: key, nested: true, ...compileArrayNested(array_schema,custom) });
+                }else{
+                    throw new Error("Invalid type in array key "+key)
+                }
+            }else{
+                throw new Error("Array should not be empty in key "+key)
+            }
+        }else if(typeof value=='object' && value){
+            nested.push({ name: key, rules: compile(value,custom) })
+        }else{
+            throw new Error("Invalid type in key "+key)
+        }
+    }
+    return { direct, nested, array_of_rules };
+}
+/**
+ * Interpreter for compiled rules
+ * @param {*} compiled_schema Compiled schema definition
+ * @param {*} payload Payload object to test
+ * @param {*} messages Custom messages
+ * @param {*} custom Custom validation
+ */
+function runner(compiled_schema,payload,messages,custom){
+    let { direct, nested, array_of_rules }=compiled_schema;
+    let errors={};
+    let breakOnFirstError=(typeof messages=="string");
+    for(let i=0;i<direct.length;i++){
+        let {name,rules}=direct[i];
+        let message=typeof messages=='object'?messages[name]:messages;
+        let payload_value=payload[name];
+        for(let r=0;r<rules.length;r++){
+            let {rule,fn}=rules[r];
+            let msg=fn(payload_value,payload);
+            if(msg){
+                if(breakOnFirstError) return messages;
+                registerError(name,msg,errors,rule,message);
+            }
+        }
+    }
+    for(let i=0;i<nested.length;i++){
+        let {name,rules}=nested[i];
+        let message=messages[name];
+        let msg=runner(rules,payload[name],message,custom);
+        if(msg){
+            if(breakOnFirstError) return messages;
+            registerError(name,msg,errors,rule,message);
+        }
+    }
+    for(let i=0;i<array_of_rules.length;i++){
+        let {name,rules,array_rules,nested}=array_of_rules[i];
+        let message=messages[name];
+        let breakOnFirstErrorArray=(typeof message=="string");
+        let payload_value=payload[name];
+        for(let r=0;r<array_rules.length;r++){
+            let {rule,fn}=array_rules[r];
+            let msg=fn(payload_value,payload);
+            if(msg){
+                if(breakOnFirstError) return messages;
+                if(breakOnFirstErrorArray){
+                    errors[name]=message;
+                    break;
+                }
+                if(Array.isArray(msg))
+                    for(let j=0;j<msg.length;j++)
+                        registerError(name,msg[j],errors,rule,message);
+                else
+                    registerError(name,msg,errors,rule,message);
+            }
+        }
+        if(breakOnFirstErrorArray && errors[name]){
+            break;
+        }
+        if(payload_value){
+            if(Array.isArray(payload_value)){
+                for(let j=0;j<payload_value.length;j++){
+                    let payload_value_array_item=payload_value[j];
+                    if(nested){
+                        let msg=runner(rules,payload_value_array_item,message,custom);
+                        if(msg){
+                            if(breakOnFirstError) return messages;
+                            if(breakOnFirstErrorArray){
+                                errors[name]=message;
+                                break;
+                            }
+                            if(!errors[name]) errors[name]={};
+                            errors[name][j]=msg;
+                        }
+                    }else{
+                        for(let r=0;r<rules.length;r++){
+                            let {rule,fn}=rules[r];
+                            let msg=fn(payload_value_array_item,payload);
+                            if(msg){
+                                if(breakOnFirstError) return messages;
+                                if(breakOnFirstErrorArray){
+                                    errors[name]=message;
+                                    break;
+                                }
+                                registerError(name,new GatemanError(msg,j),errors,rule,message);
+                            }
+                        }
+                    }
+                    if(breakOnFirstErrorArray && errors[name]){
+                        break;
+                    }
+                }
+            }else{
+                if(breakOnFirstError)
+                    return message;
+                else if(breakOnFirstErrorArray)
+                    errors[name]=message;
+                else
+                    errors[name]="Field "+name+" must be an array";
+                continue;
+            }
+        }
+    }
+    return Object.keys(errors).length?errors:null;
+}
 /**
  * Validator creator function
  * 
@@ -12,174 +255,35 @@ var globals={};
  * @param custom    Custom validation definition object
  */
 function Gateman(schema,messages,custom){
-    function _validate(payload,schema,messages){
-        var errors={};
-        var breakOnFirstError=(typeof messages=="string");
-        for(var key in schema){
-            if(key[0]=="$"){
-                var temp=key.substr(1);
-                if(custom && custom[temp]){ key=temp; continue;}
-                else if(globals[temp]) {key=temp; continue;}
-                else if(array_rules[temp]){ key=temp; continue;}
-                else if(rules[temp]){ key=temp; continue;}///////////future revision required to allow rules to be as key in object
-            }
-            var message=messages?((typeof messages=="object")?messages[key]:messages):undefined;
-            if(Array.isArray(schema[key])){
-                var breakOnFirstErrorArray=(typeof message=="string");
-                if(payload[key] && !Array.isArray(payload[key])){
-                    if(breakOnFirstError) return message;
-                    else if(breakOnFirstErrorArray) errors[key]=message;
-                    else errors[key]="Field "+key+" must be an array";
-                    continue;
-                }
-                if(schema[key].length>1) console.warn("Multiple schema is not supported yet.");
-                var rule=schema[key][0];
-                if(typeof rule=="string"){
-                    for(var rule_array=rule.split('|'),i=0;i<rule_array.length;i++){
-                        var {rule,params}=parseRule(rule_array[i]);
-                        var msg=runArrayRule(custom,rule,key,params,payload);
-                        if(!msg) continue;
-                        if(breakOnFirstError) return messages;
-                        if(breakOnFirstErrorArray){
-                            errors[key]=message;
-                            break;
-                        }
-                        if(Array.isArray(msg))
-                            for(var j=0;j<msg.length;j++)
-                                registerError(key,msg[j],errors,rule,message);
-                        else
-                            registerError(key,msg,errors,rule,message);
-                    }
-                }else{//complex
-                    var key_rules=Object.keys(rule).filter(i=>i[0]=="$" && i[1]!="$");
-                    if(key_rules.length){//special case
-                        for(var k=0;k<key_rules.length;k++){
-                            var r=key_rules[k].substr(1);
-                            var params=rule[key_rules[k]];
-                            if(!Array.isArray(params)) params=[params];
-                            var msg=runArrayRule(custom,r,key,params,payload);
-                            if(!msg) continue;
-                            if(breakOnFirstError) return messages;
-                            if(breakOnFirstErrorArray){
-                                errors[key]=message;
-                                break;
-                            }
-                            if(Array.isArray(msg))
-                                for(var j=0;j<msg.length;j++)
-                                    registerError(key,msg[j],errors,r,message);
-                            else
-                                registerError(key,msg,errors,r,message);
-                        }
-                    }
-                    var _payload=payload[key];
-                    if(_payload!=undefined){
-                        for(var k=0;k<_payload.length;k++){
-                            var error=_validate(_payload[k],rule,message);
-                            if(error){
-                                if(breakOnFirstError) return messages;
-                                if(breakOnFirstErrorArray){
-                                    errors[key]=message;
-                                    break;
-                                }
-                                if(!errors[key]) errors[key]={};
-                                errors[key][k]=error;
-                            }
-                        }
-                    }
-                }
-            }else if(typeof schema[key]=="object"){
-                var error=_validate(payload && payload[key],schema[key],message);
-                if(error){
-                    if(breakOnFirstError) return messages;
-                    errors[key]=error;
-                }
-            }else{
-                for(var rule_array=schema[key].split('|'),i=0;i<rule_array.length;i++){
-                    var {rule,params}=parseRule(rule_array[i]);
-                    var msg;
-                    if(custom && custom[rule]){
-                        if(typeof custom[rule]=="function")
-                            msg=custom[rule](payload && payload[key],params,payload);
-                        else if(custom[rule] instanceof RegExp){
-                            msg=runRegEx(custom[rule],payload && payload[key])
-                        }
-                    }else if(globals[rule]){
-                        if(typeof globals[rule]=="function")
-                            msg=globals[rule](payload && payload[key],params,payload);
-                        else if(globals[rule] instanceof RegExp){
-                            msg=runRegEx(globals[rule],payload && payload[key])
-                        }
-                    }else if(rules[rule])
-                        msg=rules[rule](payload && payload[key],params,payload);
-                    else
-                        throw new Error("Rule "+rule+" is not defined");
-                    if(!msg) continue;
-                    if(breakOnFirstError) return messages;
-                    registerError(key,msg,errors,rule,message);
-                }
-                if(opt.ignoreSingle && errors[key] && typeof errors[key]!="string"){
-                    if(Object.keys(errors[key]).length==1){
-                        var k=Object.keys(errors[key])[0];
-                        errors[key]=errors[key][k];
-                    }
-                }
-            }
+    let _messages=messages||{};
+    let _customs=custom||{};
+    for(let key in custom){
+        let value=custom[key];
+        if(!value) throw new Error("Invalid custom validation "+key+". Only Function and RegExp supported.");
+        if(typeof value!='function' && !(value instanceof RegExp)){
+            throw new Error("Invalid custom validation "+key+". Only Function and RegExp supported.");
         }
-        return Object.keys(errors)==0?null:errors;
     }
-    var opt={};
-    return function(payload,options){
+    let compiled=compile(schema,_customs,globals);
+    let opt={};
+    return (payload,options)=>{
         opt={
             flatten:false,
             ignoreSingle:false,
             ...options
         };
-        var errors=_validate(payload,schema,messages);
+        let errors=runner(compiled,payload,_messages,_customs);
         return (opt.flatten && errors)?flattenObj(errors):errors;
     }
 }
 /**
- * Run the provided validation for every item in array
- * 
- * @param array Array to check
- * @param cb    Callback to execute with each item from array
+ * Adds error to the specified error object with parsed string
+ * @param {*} key Payload key name
+ * @param {*} error Error message or object
+ * @param {*} errors Destination error object
+ * @param {*} rule Rule name
+ * @param {*} message Custom message
  */
-function runForEveryItem(array,cb){
-    if(!array) return null;
-    if(!Array.isArray(array)) return "%name% must be an array";
-    var errors=[];
-    for(var i=0;i<array.length;i++){
-        var error=cb(array[i]);
-        if(error) errors.push(new GatemanError(error,i));
-    }
-    return errors.length?errors:null;
-}
-/**
- * Run array rules for built-in, custom and global rules
- * 
- * @param custom    Custom validations
- * @param rule      rule name
- * @param key       Key name
- * @param params    Parameters for rule functions
- * @param payload   Payload data
- */
-function runArrayRule(custom,rule,key,params,payload){
-    if(custom && custom[rule]){
-        if(typeof custom[rule]=="function")
-            return runForEveryItem(payload && payload[key], (item)=>custom[rule](item,params)); //custom[rule](payload && payload[key],params);
-        else if(custom[rule] instanceof RegExp)
-            return runForEveryItem(payload && payload[key], (item)=>runRegEx(custom[rule],item)); //runRegEx(custom[rule],payload && payload[key]);
-    }else if(globals[rule]){
-        if(typeof globals[rule]=="function")
-            return runForEveryItem(payload && payload[key], (item)=>globals[rule](item,params)); //globals[rule](payload && payload[key],params);
-        else if(globals[rule] instanceof RegExp)
-            return runForEveryItem(payload && payload[key], (item)=>runRegEx(globals[rule],item)); //runRegEx(globals[rule],payload && payload[key]);
-    }else if(array_rules[rule])
-        return array_rules[rule](payload && payload[key],params);
-    else
-        throw new Error("Rule "+rule+" is not defined");
-    return null;
-}
 function registerError(key,error,errors,rule,message){
     var rulemessage;
     if(message){
@@ -202,12 +306,10 @@ function registerError(key,error,errors,rule,message){
 	else//truthy value
 		errors[key][rule]=rulemessage || (key+' is invalid');
 }
-function parseRule(str){
-    if(!str.includes(":"))
-        return {rule:str.trim(),params:[]};
-    var [rule,...params]=str.split(":",2);
-    return {rule:rule.trim(),params:params.map(m=>m.trim())};
-}
+/**
+ * Converts a nested object to a flat object
+ * @param {*} obj Object to convert
+ */
 function flattenObj(obj){
     var f_obj={};
     for(var key in obj){
@@ -222,6 +324,27 @@ function flattenObj(obj){
     }
     return f_obj;
 }
+/**
+ * Parses a rule and its parameters
+ * @param {*} str String
+ */
+function parseRule(str){
+    if(!str.includes(":"))
+        return {
+            rule:str.trim(),
+            params:[]
+        };
+    var [rule,...params]=str.split(":");
+    return {
+        rule: rule.trim(),
+        params: params.map(m=>m.trim())
+    };
+}
+/**
+ * Executes a regex match
+ * @param {*} regex RegExp pattern
+ * @param {*} value Value to match
+ */
 function runRegEx(regex,value){
     if(value==undefined && value==null) return null;
     if(typeof value!="string") return "Please enter valid %name%";

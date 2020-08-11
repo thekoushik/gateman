@@ -5,7 +5,7 @@
         {
             "$mincount":1,
             "$maxcount":10,
-            "quantity":"number|required|max:'qty'",
+            "quantity":"number|required|max:qty",
             "rate":"number|required",
             "product":{
                 "description":"string|required",
@@ -13,9 +13,9 @@
             },
             "delivery_schedules":[
                 {
-                    "qty":"number|required|sum:'products.quantity'",
-                    "period":"date|inyears:'products.delivery_schedules.years'",
-                    "years":["year|count:2"]
+                    "qty":"number|required|sum:products.$.quantity",
+                    "period":"date|inyears:products.$.delivery_schedules.$.years",
+                    "years":["year|$count:2"]
                 }
             ]
         }
@@ -25,6 +25,6 @@
     "phone":"_phone",
     "email":"email",
     "date":"date",
-    "price":"number|min:0",
+    "price":"number|range:700:2000",
     "remarks":"string|maxlength:200"
 }

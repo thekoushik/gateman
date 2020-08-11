@@ -190,3 +190,15 @@ describe('terms:"accepted"',()=>{
         [{terms:"true"},null],
     ])
 })
+describe('age:"range:12:17"',()=>{
+    beforeAll(()=>{
+        validate=gateman({
+            age:"number | range : 12:17"
+        });
+    })
+    doTests([
+        [{},null],
+        [{age:11},{age:{range:'age must be between 12 and 17'}}],
+        [{age:15},null],
+    ])
+})

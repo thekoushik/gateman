@@ -8,24 +8,58 @@ function doTests(tests){
     })
 }
 
-describe('names:["string|required"]',()=>{
+describe('names:["string |  $required"]',()=>{
     beforeAll(()=>{
         validate=gateman({
-            names:["string|required"]
+            names:["string |  $required"]
         });
     })
     doTests([
         [{names:["hello"]},null],
         [{names:"hello"},{names:"Field names must be an array"}],
-        [{names:[12]},{names:{"0":{string:"Item 0 of names must be a string"}}}],
+        [{names:[12]},{names:{"0":{string:"names must be a string"}}}],
         [{names:[]},{names:{"required": "Atleast one names is required"}}],
-        [{names:[{a:9}]},{ names: { '0': { string: 'Item 0 of names must be a string' } } }]
+        [{names:[{a:9}]},{ names: { '0': { string: 'names must be a string' } } }]
     ])
 })
-describe('tags:["mincount:2"]',()=>{
+describe('names:["string|$required"] with message',()=>{
     beforeAll(()=>{
         validate=gateman({
-            tags:["string|mincount:2"]
+            names:["string|$required"]
+        },{
+            names: {
+                required: 'Missing',
+                string: 'Wrong'
+            }
+        });
+    })
+    doTests([
+        [{names:["hello"]},null],
+        [{names:"hello"},{names:"Field names must be an array"}],
+        [{names:[12]},{names:{"0":{string:"Wrong"}}}],
+        [{names:[]},{names:{"required": "Missing"}}],
+        [{names:[{a:9}]},{ names: { '0': { string: 'Wrong' } } }]
+    ])
+})
+describe('names:["string | $required"] with message with flatten',()=>{
+    beforeAll(()=>{
+        validate=gateman({
+            names:["string | $required"]
+        },{
+            names: {
+                required: 'Missing',
+                string: 'Wrong'
+            }
+        });
+    })
+    it(' {names:[{a:9}]} => { names.0.string: "Wrong" } } }',()=>{
+        expect(validate({names:[{a:9}]},{flatten:true})).toStrictEqual({ "names.0.string": "Wrong"  })
+    })
+})
+describe('tags:["$mincount:2"]',()=>{
+    beforeAll(()=>{
+        validate=gateman({
+            tags:["string|$mincount:2"]
         });
     })
     doTests([
@@ -36,10 +70,10 @@ describe('tags:["mincount:2"]',()=>{
         [{tags:["hello","world","foobar"]},null],
     ])
 })
-describe('tags:["maxcount:2"]',()=>{
+describe('tags:["$maxcount:2"]',()=>{
     beforeAll(()=>{
         validate=gateman({
-            tags:["string|maxcount:2"]
+            tags:["string|$maxcount:2"]
         });
     })
     doTests([
@@ -50,10 +84,10 @@ describe('tags:["maxcount:2"]',()=>{
         [{tags:["hello","world","foobar"]},{tags:{maxcount:'tags must have atmost 2 item(s)'}}],
     ])
 })
-describe('tags:["count:2"]',()=>{
+describe('tags:["$count:2"]',()=>{
     beforeAll(()=>{
         validate=gateman({
-            tags:["string|count:2"]
+            tags:["string|$count:2"]
         });
     })
     doTests([

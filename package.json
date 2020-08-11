@@ -1,6 +1,6 @@
 {
   "name": "gateman",
-  "version": "0.2.6",
+  "version": "0.3.0",
   "description": "Simple and easiest JSON validator",
   "main": "index.js",
   "scripts": {

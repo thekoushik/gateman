@@ -1,5 +1,4 @@
 var gateman=require('../index');
-var GatemanError=require('../index').GatemanError;
 var validate=gateman({
     name:"required | uppercase",
     products:[{
