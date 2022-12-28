@@ -1,23 +1,23 @@
 {
   "name": "gateman",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Simple and easiest JSON validator",
   "main": "index.js",
   "scripts": {
     "test": "jest"
   },
-  "engines" : {
-    "node" : ">=6.4"
+  "engines": {
+    "node": ">=6.4"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/thekoushik/gateman.git"
   },
-  "files":[
-	"index.js",
-	"lib/array.js",
-	"lib/gatemanerror.js",
-	"lib/rules.js"
+  "files": [
+    "index.js",
+    "lib/array.js",
+    "lib/gatemanerror.js",
+    "lib/rules.js"
   ],
   "keywords": [
     "validation",
@@ -26,9 +26,12 @@
   "author": "Koushik Seal",
   "license": "MIT",
   "devDependencies": {
-    "jest": "^24.8.0"
+    "jest": "^29.3.1"
   },
-  "jest":{
-    "testMatch": [ "**/test/**/*.[jt]s?(x)", "**/?(*.)+(spec|test).[jt]s?(x)" ]
+  "jest": {
+    "testMatch": [
+      "**/test/**/*.[jt]s?(x)",
+      "**/?(*.)+(spec|test).[jt]s?(x)"
+    ]
   }
 }

@@ -114,7 +114,13 @@ var gateman = require('gateman');
 var validate = (schema, customMessages, customValidators)=>{
 	var validatorFn = gateman(schema, customMessages, customValidators);
 	return (req,res,next)=>{
-		req.errors = validatorFn(req.body,{flatten:true});
+		var errors = validatorFn(req.body,{flatten:true});
+        if (errors) {
+            return res.status(422).json({
+                success: false,
+                error: errors
+            })
+        }
 		next();
 	}
 }
@@ -123,20 +129,14 @@ app.post('/demo', validate({
     email:"email|required",
     location:"string|required|minlength:10"
 }), (req, res) => {
-	if(req.errors){
-		return res.status(422).json({
-			success: false,
-			error: req.errors
-		});
-	}
 	res.json({
-		success:true,
-		data:req.body
+		success: true,
+		data: req.body
 	});
 });
 
 app.listen(8080, () => {
-	console.log(name + ' is live at 8080');
+	console.log('App is live at 8080');
 });
 ```
 
